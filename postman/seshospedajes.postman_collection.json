@@ -1,0 +1,236 @@
+{
+  "info": {
+    "name": "SES.Hospedajes API (v1.2.0)",
+    "_postman_id": "ses-dev-20260625",
+    "description": "Colección completa para integradores: hospedaje + rent-a-car.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL", "value": "https://seshospedajes.es/app/api/v1" },
+    { "key": "API_KEY",  "value": "pk_test_123456789abcdef" },
+    { "key": "EST_ID",   "value": "12" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET /v1/ping",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Api-Key", "value": "{{API_KEY}}" }],
+            "url": "{{BASE_URL}}/ping"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Establecimientos",
+      "item": [
+        {
+          "name": "GET /v1/establishments",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Api-Key", "value": "{{API_KEY}}" }],
+            "url": "{{BASE_URL}}/establishments?page=1&limit=20"
+          }
+        },
+        {
+          "name": "POST /v1/establishments",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Api-Key",    "value": "{{API_KEY}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/establishments",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Rent-A-Car Madrid Airport\",\n  \"numero_establecimiento\": \"R12345\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Huéspedes (hospedaje)",
+      "item": [
+        {
+          "name": "GET /v1/guests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Api-Key", "value": "{{API_KEY}}" }],
+            "url": "{{BASE_URL}}/guests?page=1&limit=20"
+          }
+        },
+        {
+          "name": "POST /v1/guests",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Api-Key",    "value": "{{API_KEY}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/guests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Ana\",\n  \"apellido1\": \"García\",\n  \"tipo_documento\": \"DNI\",\n  \"numero_documento\": \"12345678Z\",\n  \"fecha_nacimiento\": \"1985-03-12\",\n  \"nacionalidad\": \"ESP\",\n  \"genero\": \"F\",\n  \"fecha_entrada\": \"2026-07-01\",\n  \"hora_entrada\": \"15:00:00\",\n  \"establecimiento_id\": {{EST_ID}}\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contratos",
+      "item": [
+        {
+          "name": "GET /v1/contracts",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Api-Key", "value": "{{API_KEY}}" }],
+            "url": "{{BASE_URL}}/contracts?page=1&limit=20"
+          }
+        },
+        {
+          "name": "POST /v1/contracts (cabecera)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Api-Key",    "value": "{{API_KEY}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/contracts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"establecimiento_id\": {{EST_ID}},\n  \"referencia\": \"RC-2026-0001\",\n  \"fecha_contrato\": \"2026-06-25\",\n  \"fecha_recogida\": \"2026-06-26 10:00:00\",\n  \"fecha_devolucion\": \"2026-06-30 18:00:00\",\n  \"tipo_pago\": \"TARJETA\",\n  \"fecha_pago\": \"2026-06-25\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rent-a-Car",
+      "item": [
+        {
+          "name": "POST /v1/rentacar/contracts (alta atómica)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Api-Key",    "value": "{{API_KEY}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/rentacar/contracts",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uuid\": \"8d2e1c0a-7b21-4f0a-9a91-8b22d3f3a001\",\n  \"contract\": {\n    \"establecimiento_id\": {{EST_ID}},\n    \"referencia\": \"RC-2026-0007\",\n    \"fecha_contrato\": \"2026-06-25\",\n    \"fecha_recogida\": \"2026-06-26 10:00:00\",\n    \"fecha_devolucion\": \"2026-06-30 18:00:00\",\n    \"tipo_pago\": \"TARJETA\",\n    \"fecha_pago\": \"2026-06-25\",\n    \"medio_pago\": \"VISA\",\n    \"titular_pago\": \"Ana García\",\n    \"caducidad_tarjeta\": \"12/28\"\n  },\n  \"vehicle\": {\n    \"categoria\": \"TURISMO_M1\",\n    \"tipo\": \"TURISMO\",\n    \"marca\": \"SEAT\",\n    \"modelo\": \"Ibiza\",\n    \"matricula\": \"1234ABC\",\n    \"numero_bastidor\": \"VSSZZZ6JZNR123456\",\n    \"color\": \"BLANCO\",\n    \"km_recogida\": 12030\n  },\n  \"pickup_address\":  { \"direccion\": \"Aeropuerto T1\", \"codigo_municipio\": \"28079\", \"nombre_municipio\": \"Madrid\", \"codigo_postal\": \"28042\", \"pais\": \"ESP\" },\n  \"dropoff_address\": { \"direccion\": \"Aeropuerto T4\", \"codigo_municipio\": \"28079\", \"nombre_municipio\": \"Madrid\", \"codigo_postal\": \"28042\", \"pais\": \"ESP\" },\n  \"persons\": [\n    {\n      \"rol\": \"TI\",\n      \"nombre\": \"Ana\", \"apellido1\": \"García\", \"apellido2\": \"López\",\n      \"tipo_documento\": \"NIF\", \"numero_documento\": \"12345678Z\",\n      \"fecha_nacimiento\": \"1985-03-12\", \"nacionalidad\": \"ESP\", \"sexo\": \"M\",\n      \"telefono\": \"+34600111222\", \"correo\": \"ana@example.com\",\n      \"license\": { \"tipo\": \"B\", \"validez\": \"2030-01-01\", \"numero\": \"B12345678\" },\n      \"address\": { \"direccion\": \"Calle Mayor 1\", \"codigo_municipio\": \"28079\", \"nombre_municipio\": \"Madrid\", \"codigo_postal\": \"28013\", \"pais\": \"ESP\" }\n    },\n    {\n      \"rol\": \"CP\",\n      \"nombre\": \"Luis\", \"apellido1\": \"Pérez\",\n      \"tipo_documento\": \"NIF\", \"numero_documento\": \"87654321X\",\n      \"fecha_nacimiento\": \"1990-07-08\", \"nacionalidad\": \"ESP\", \"sexo\": \"H\",\n      \"license\": { \"tipo\": \"B\", \"validez\": \"2031-06-01\", \"numero\": \"L7654321\" },\n      \"address\": { \"direccion\": \"Av. Diagonal 100\", \"codigo_municipio\": \"08019\", \"nombre_municipio\": \"Barcelona\", \"codigo_postal\": \"08018\", \"pais\": \"ESP\" }\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /v1/vehicles?contract_id=:id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Api-Key", "value": "{{API_KEY}}" }],
+            "url": "{{BASE_URL}}/vehicles?contract_id=4567"
+          }
+        },
+        {
+          "name": "POST /v1/vehicles",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Api-Key",    "value": "{{API_KEY}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/vehicles",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alquiler_id\": 4567,\n  \"tipo\": \"FURGONETA\",\n  \"marca\": \"Renault\",\n  \"modelo\": \"Kangoo\",\n  \"matricula\": \"5678DEF\",\n  \"color\": \"AZUL\",\n  \"km_recogida\": 45120\n}"
+            }
+          }
+        },
+        {
+          "name": "GET /v1/persons?contract_id=:id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Api-Key", "value": "{{API_KEY}}" }],
+            "url": "{{BASE_URL}}/persons?contract_id=4567"
+          }
+        },
+        {
+          "name": "POST /v1/persons",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Api-Key",    "value": "{{API_KEY}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/persons",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"alquiler_id\": 4567,\n  \"rol\": \"CS\",\n  \"nombre\": \"María\",\n  \"apellido1\": \"Ruiz\",\n  \"tipo_documento\": \"NIF\",\n  \"numero_documento\": \"11223344Q\",\n  \"fecha_nacimiento\": \"1992-04-19\",\n  \"nacionalidad\": \"ESP\",\n  \"sexo\": \"M\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /v1/licenses",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Api-Key",    "value": "{{API_KEY}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/licenses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"persona_id\": 122,\n  \"tipo\": \"B\",\n  \"validez\": \"2031-06-01\",\n  \"numero\": \"L7654321\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /v1/addresses (recogida)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Api-Key",    "value": "{{API_KEY}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/addresses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"recogida\",\n  \"alquiler_id\": 4567,\n  \"direccion\": \"Aeropuerto T1\",\n  \"codigo_municipio\": \"28079\",\n  \"nombre_municipio\": \"Madrid\",\n  \"codigo_postal\": \"28042\",\n  \"pais\": \"ESP\"\n}"
+            }
+          }
+        },
+        {
+          "name": "POST /v1/addresses (persona)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "X-Api-Key",    "value": "{{API_KEY}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{BASE_URL}}/addresses",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"persona\",\n  \"persona_id\": 122,\n  \"direccion\": \"Calle Mayor 1\",\n  \"codigo_municipio\": \"28079\",\n  \"nombre_municipio\": \"Madrid\",\n  \"codigo_postal\": \"28013\",\n  \"pais\": \"ESP\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Precheckins",
+      "item": [
+        {
+          "name": "GET /v1/precheckins",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "X-Api-Key", "value": "{{API_KEY}}" }],
+            "url": "{{BASE_URL}}/precheckins?page=1&limit=20"
+          }
+        }
+      ]
+    }
+  ]
+}

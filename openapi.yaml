@@ -1,0 +1,541 @@
+openapi: 3.0.3
+info:
+  title: SES.Hospedajes API
+  version: 1.2.0
+  description: |
+    API REST pública de SES.Hospedajes para integración con sistemas externos.
+
+    ## Autenticación
+    Cabecera `X-Api-Key: <api_key>` en cada petición. Se aceptan también las
+    variantes `Api-Key` (cabecera) y `?api_key=` (query, recomendado únicamente
+    para pruebas manuales).
+
+    Requiere cuenta con plan Premium y acceso a la API habilitado.
+
+    ## Casos de uso cubiertos
+    - **Hospedaje**: alta de huéspedes (parte de viajero) por establecimiento.
+    - **Rent-a-Car**: alta de contrato de alquiler de vehículo con titular,
+      conductores, permisos de conducir y direcciones.
+
+    ## Entorno de pruebas
+    La plataforma admite API Keys de sandbox. Los registros creados con una
+    API Key de sandbox se persisten igual que en producción pero no se envían
+    al Ministerio del Interior. El campo `env` de `/v1/ping` indica el entorno
+    actual (`"production"` o `"sandbox"`).
+
+    ## Envío al Ministerio del Interior
+    El envío al MIR (SES.Hospedajes / VUD) es asíncrono. Los registros creados
+    a través de la API quedan en estado pendiente (`enviado_ministerio = 0`) y
+    son procesados por un servicio interno que los comunica a la sede
+    electrónica del Ministerio. El estado puede consultarse en cualquier
+    momento con `GET /v1/contracts/{id}` o `GET /v1/guests/{id}`.
+servers:
+  - url: https://seshospedajes.es/app/api/v1
+    description: Producción
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-Api-Key
+  parameters:
+    Page:   { name: page,  in: query, schema: { type: integer, default: 1, minimum: 1 } }
+    Limit:  { name: limit, in: query, schema: { type: integer, default: 20, minimum: 1, maximum: 200 } }
+    Q:      { name: q,     in: query, schema: { type: string } }
+    From:   { name: from,  in: query, schema: { type: string, format: date } }
+    To:     { name: to,    in: query, schema: { type: string, format: date } }
+    ContractIdFilter:
+      name: contract_id
+      in: query
+      schema: { type: integer }
+      description: Filtra por `alquiler_id` (solo en /vehicles y /persons).
+  responses:
+    Unauthorized:
+      description: API Key ausente o inválida.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Forbidden:
+      description: Plan insuficiente o recurso ajeno al usuario.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    NotFound:
+      description: Recurso no encontrado.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+    Validation:
+      description: Datos con formato inválido o faltantes.
+      content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+  schemas:
+    Error:
+      type: object
+      properties:
+        ok:      { type: boolean, example: false }
+        code:    { type: string,  example: validation_error }
+        message: { type: string }
+        fields:
+          type: object
+          additionalProperties: { type: string }
+          description: >
+            Un error por campo, con la ruta dentro del sobre cuando la petición
+            es anidada. Se devuelven TODOS los que haya, no solo el primero.
+            Además del formato de fechas y correos, se comprueban los límites
+            del esquema del Ministerio: longitudes máximas (marca y color 10,
+            nombre 50, número de documento 15, tipo de documento 5…) y formatos
+            (nacionalidad y país en tres letras ISO 3166, código de municipio en
+            cinco cifras del INE). Comprobarlo aquí evita que el contrato se
+            guarde y falle días después, al comunicarlo.
+          example:
+            persons[1].tipo_documento: 'recibido "PASAPORTE"; debe ser uno de: NIF, NIE, PAS, OTRO, CIF'
+            vehicle.marca: 'máximo 10 caracteres; llegaron 13: "MERCEDES-BENZ"'
+            persons[0].address.pais: 'recibido "España"; se espera tres letras ISO 3166: ESP, FRA, DEU…'
+    Paginated:
+      type: object
+      properties:
+        ok:    { type: boolean, example: true }
+        data:  { type: array, items: { type: object } }
+        page:  { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+
+    Establishment:
+      type: object
+      properties:
+        id:                     { type: integer }
+        nombre:                 { type: string }
+        numero_establecimiento: { type: string, description: 'Código MIR del establecimiento.' }
+        uuid:                   { type: string, nullable: true }
+
+    Guest:
+      type: object
+      description: Huésped de hospedaje (tabla `huespedes`).
+      properties:
+        id:                  { type: integer }
+        uuid:                { type: string, nullable: true }
+        nombre:              { type: string }
+        apellido1:           { type: string }
+        apellido2:           { type: string, nullable: true }
+        tipo_documento:      { type: string, enum: [NIF, NIE, PAS, OTRO], description: 'Código del Ministerio, máximo 5 caracteres. Se aceptan también DNI y PASAPORTE, que se traducen a NIF y PAS.' }
+        numero_documento:    { type: string }
+        fecha_nacimiento:    { type: string, format: date }
+        nacionalidad:        { type: string, description: 'ISO 3166-1 alpha-3 (ej. ESP).' }
+        genero:              { type: string, enum: [M, F, Otro] }
+        contacto_email:      { type: string, format: email, nullable: true }
+        fecha_entrada:       { type: string, format: date }
+        hora_entrada:        { type: string, example: '15:00:00' }
+        fecha_salida:        { type: string, format: date, nullable: true }
+        establecimiento_id:  { type: integer }
+
+    Contract:
+      type: object
+      description: Contrato (tabla `alquileres`). Cabecera común a hospedaje y rent-a-car.
+      properties:
+        id:                          { type: integer }
+        uuid:                        { type: string, nullable: true }
+        usuario_id:                  { type: integer }
+        establecimiento_id:          { type: integer }
+        numero_establecimiento:      { type: string, nullable: true }
+        referencia:                  { type: string }
+        fecha_contrato:              { type: string, format: date }
+        fecha_recogida:              { type: string, example: '2026-07-01 10:00:00' }
+        fecha_devolucion:            { type: string, example: '2026-07-05 18:00:00' }
+        tipo_pago:                   { type: string }
+        fecha_pago:                  { type: string, format: date }
+        medio_pago:                  { type: string, nullable: true }
+        titular_pago:                { type: string, nullable: true }
+        caducidad_tarjeta:           { type: string, example: '12/28' }
+        codigo_establecimiento_mir:  { type: string, nullable: true }
+        enviado_ministerio:          { type: integer, enum: [0, 1] }
+
+    Vehicle:
+      type: object
+      description: Vehículo de un contrato rent-a-car (tabla `vehiculos`, 1:1 con `alquileres`).
+      properties:
+        id:               { type: integer }
+        uuid:             { type: string, nullable: true }
+        alquiler_id:      { type: integer }
+        categoria:        { type: string, nullable: true }
+        tipo:             { type: string, example: TURISMO }
+        marca:            { type: string }
+        modelo:           { type: string }
+        matricula:        { type: string }
+        numero_bastidor:  { type: string, nullable: true }
+        color:            { type: string, nullable: true }
+        km_recogida:      { type: integer, nullable: true }
+        km_devolucion:    { type: integer, nullable: true }
+        datos_gps:        { type: string, nullable: true }
+
+    Person:
+      type: object
+      description: Persona vinculada a un contrato rent-a-car (tabla `personas`).
+      properties:
+        id:               { type: integer }
+        uuid:             { type: string, nullable: true }
+        alquiler_id:      { type: integer }
+        rol:              { type: string, enum: [TI, CP, CS], description: 'TI=Titular del contrato · CP=Conductor principal · CS=Conductor secundario' }
+        nombre:           { type: string }
+        apellido1:        { type: string }
+        apellido2:        { type: string, nullable: true }
+        tipo_documento:   { type: string, enum: [NIF, NIE, PAS, OTRO, CIF], example: NIF, description: 'Código del Ministerio, máximo 5 caracteres (el campo tipoDocumento del esquema es string5Type). CIF para titulares que son empresa. Se aceptan también DNI y PASAPORTE, que se traducen a NIF y PAS; cualquier otro valor se rechaza indicando el recibido.' }
+        numero_documento: { type: string }
+        fecha_nacimiento: { type: string, format: date }
+        nacionalidad:     { type: string, description: 'ISO 3166-1 alpha-3.' }
+        sexo:             { type: string, enum: [H, M, O] }
+        telefono:         { type: string, nullable: true }
+        telefono2:        { type: string, nullable: true }
+        correo:           { type: string, format: email, nullable: true }
+
+    License:
+      type: object
+      description: Permiso de conducir (tabla `permisos_conducir`, 1:1 con `personas`).
+      properties:
+        id:         { type: integer }
+        uuid:       { type: string, nullable: true }
+        persona_id: { type: integer }
+        tipo:       { type: string, example: B, description: 'AM, A1, A2, A, B, B1, BE, C1, C, D1, D, etc.' }
+        validez:    { type: string, format: date }
+        numero:     { type: string }
+        soporte:    { type: string, nullable: true }
+
+    Address:
+      type: object
+      description: |
+        Dirección (tabla `direcciones`). Según `tipo` se enlaza a `alquiler_id`
+        (recogida/devolucion) o a `persona_id` (persona).
+      properties:
+        id:                       { type: integer }
+        uuid:                     { type: string, nullable: true }
+        tipo:                     { type: string, enum: [recogida, devolucion, persona] }
+        alquiler_id:              { type: integer, nullable: true }
+        persona_id:               { type: integer, nullable: true }
+        direccion:                { type: string }
+        direccion_complementaria: { type: string, nullable: true }
+        codigo_municipio:         { type: string, example: '28079' }
+        nombre_municipio:         { type: string, example: 'Madrid' }
+        codigo_postal:            { type: string }
+        pais:                     { type: string, description: 'ISO 3166-1 alpha-3.' }
+
+    RentACarContractRequest:
+      type: object
+      required: [contract, vehicle, persons]
+      properties:
+        uuid:
+          type: string
+          description: UUID del envoltorio. Si se repite se devuelve el contrato existente.
+        contract:
+          allOf:
+            - $ref: '#/components/schemas/Contract'
+          required: [establecimiento_id, referencia]
+        vehicle:    { $ref: '#/components/schemas/Vehicle' }
+        pickup_address:  { $ref: '#/components/schemas/Address' }
+        dropoff_address: { $ref: '#/components/schemas/Address' }
+        persons:
+          type: array
+          minItems: 1
+          maxItems: 3
+          items:
+            allOf:
+              - $ref: '#/components/schemas/Person'
+            properties:
+              license: { $ref: '#/components/schemas/License' }
+              address: { $ref: '#/components/schemas/Address' }
+
+    RentACarContractResponse:
+      type: object
+      properties:
+        ok:                 { type: boolean, example: true }
+        id:                 { type: integer, description: 'id del contrato (alquileres).' }
+        vehicle_id:         { type: integer }
+        person_ids:         { type: array, items: { type: integer } }
+        license_ids:        { type: array, items: { type: integer } }
+        person_address_ids: { type: array, items: { type: integer } }
+        address_ids:
+          type: object
+          properties:
+            pickup:  { type: integer }
+            dropoff: { type: integer }
+        mir_status:
+          type: string
+          enum: [pending, sandbox]
+          description: |
+            Estado del envío al Ministerio del Interior tras el alta:
+            `pending` en producción (el envío es asíncrono),
+            `sandbox` si la API Key utilizada es de sandbox (no se enviará nunca).
+        idempotent:
+          type: boolean
+          description: 'true si el contrato ya existía y se devuelve sin crear nuevos registros.'
+
+security:
+  - ApiKeyAuth: []
+
+paths:
+  /ping:
+    get:
+      summary: Health check
+      description: |
+        Verifica conectividad y autenticación. La respuesta indica también el
+        entorno actual (`production` o `sandbox`) según la API Key utilizada.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:      { type: boolean, example: true }
+                  ts:      { type: string, format: date-time }
+                  userId:  { type: integer }
+                  sandbox: { type: boolean }
+                  env:     { type: string, enum: [production, sandbox] }
+
+  /establishments:
+    get:
+      summary: Listar establecimientos
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Q' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Paginated' } } } } }
+    post:
+      summary: Crear establecimiento
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Establishment' } } }
+      responses:
+        '201': { description: Creado }
+        '422': { $ref: '#/components/responses/Validation' }
+  /establishments/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+    get:    { summary: Obtener establecimiento,  responses: { '200': { description: OK } } }
+    put:    { summary: Actualizar establecimiento, responses: { '200': { description: OK } } }
+    delete: { summary: Eliminar establecimiento,   responses: { '200': { description: OK } } }
+
+  /guests:
+    get:
+      summary: Listar huéspedes (hospedaje)
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Q' }, { $ref: '#/components/parameters/From' }, { $ref: '#/components/parameters/To' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Paginated' } } } } }
+    post:
+      summary: Crear huésped
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Guest' } } }
+      responses:
+        '201': { description: Creado }
+        '422': { $ref: '#/components/responses/Validation' }
+  /guests/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+    get:    { summary: Obtener huésped,  responses: { '200': { description: OK } } }
+    put:    { summary: Actualizar huésped, responses: { '200': { description: OK } } }
+    delete: { summary: Eliminar huésped,   responses: { '200': { description: OK } } }
+
+  /contracts:
+    get:
+      summary: Listar contratos (cabeceras)
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Q' }, { $ref: '#/components/parameters/From' }, { $ref: '#/components/parameters/To' }]
+      responses: { '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/Paginated' } } } } }
+    post:
+      summary: Crear contrato (cabecera)
+      description: Solo cabecera. Para rent-a-car completo, usar `/rentacar/contracts`.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Contract' } } }
+      responses:
+        '201': { description: Creado }
+        '422': { $ref: '#/components/responses/Validation' }
+  /contracts/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+    get:    { summary: Obtener contrato,  responses: { '200': { description: OK } } }
+    put:    { summary: Actualizar contrato, responses: { '200': { description: OK } } }
+    delete: { summary: Eliminar contrato,   responses: { '200': { description: OK } } }
+
+  /precheckins:
+    get:
+      summary: Listar links de precheckin (solo lectura)
+      parameters: [{ $ref: '#/components/parameters/Page' }, { $ref: '#/components/parameters/Limit' }, { $ref: '#/components/parameters/Q' }, { $ref: '#/components/parameters/From' }, { $ref: '#/components/parameters/To' }]
+      responses: { '200': { description: OK } }
+
+  # -------- RENT-A-CAR --------
+  /rentacar/contracts:
+    post:
+      summary: Alta atómica de contrato rent-a-car
+      description: |
+        Crea en una sola transacción la cabecera del contrato, el vehículo, las
+        personas (titular y conductores) con su permiso de conducir y dirección
+        personal, y las direcciones de recogida y devolución. Si cualquier paso
+        de la transacción falla no se persiste ningún registro.
+
+        Idempotente mediante el `uuid` del envoltorio o, en su defecto, mediante
+        la combinación `referencia` + cuenta del propietario.
+
+        El envío al Ministerio del Interior es asíncrono y se procesa al margen
+        de esta llamada.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RentACarContractRequest' }
+            examples:
+              completo:
+                value:
+                  uuid: "8d2e1c0a-7b21-4f0a-9a91-8b22d3f3a001"
+                  contract:
+                    establecimiento_id: 12
+                    referencia: "RC-2026-0007"
+                    fecha_contrato: "2026-06-25"
+                    fecha_recogida: "2026-06-26 10:00:00"
+                    fecha_devolucion: "2026-06-30 18:00:00"
+                    tipo_pago: "TARJETA"
+                    fecha_pago: "2026-06-25"
+                    medio_pago: "VISA"
+                    titular_pago: "Ana García"
+                    caducidad_tarjeta: "12/28"
+                  vehicle:
+                    categoria: "TURISMO_M1"
+                    tipo: "TURISMO"
+                    marca: "SEAT"
+                    modelo: "Ibiza"
+                    matricula: "1234ABC"
+                    numero_bastidor: "VSSZZZ6JZNR123456"
+                    color: "BLANCO"
+                    km_recogida: 12030
+                  pickup_address:
+                    direccion: "Aeropuerto T1, Mostrador 4"
+                    codigo_municipio: "28079"
+                    nombre_municipio: "Madrid"
+                    codigo_postal: "28042"
+                    pais: "ESP"
+                  dropoff_address:
+                    direccion: "Aeropuerto T4, Devolución"
+                    codigo_municipio: "28079"
+                    nombre_municipio: "Madrid"
+                    codigo_postal: "28042"
+                    pais: "ESP"
+                  persons:
+                    - rol: "TI"
+                      nombre: "Ana"
+                      apellido1: "García"
+                      apellido2: "López"
+                      tipo_documento: "NIF"
+                      numero_documento: "12345678Z"
+                      fecha_nacimiento: "1985-03-12"
+                      nacionalidad: "ESP"
+                      sexo: "M"
+                      telefono: "+34600111222"
+                      correo: "ana@example.com"
+                      license:
+                        tipo: "B"
+                        validez: "2030-01-01"
+                        numero: "B12345678"
+                      address:
+                        direccion: "Calle Mayor 1"
+                        codigo_municipio: "28079"
+                        nombre_municipio: "Madrid"
+                        codigo_postal: "28013"
+                        pais: "ESP"
+                    - rol: "CP"
+                      nombre: "Luis"
+                      apellido1: "Pérez"
+                      tipo_documento: "NIF"
+                      numero_documento: "87654321X"
+                      fecha_nacimiento: "1990-07-08"
+                      nacionalidad: "ESP"
+                      sexo: "H"
+                      license: { tipo: "B", validez: "2031-06-01", numero: "L7654321" }
+                      address: { direccion: "Av. Diagonal 100", codigo_municipio: "08019", nombre_municipio: "Barcelona", codigo_postal: "08018", pais: "ESP" }
+      responses:
+        '201':
+          description: Creado
+          content: { application/json: { schema: { $ref: '#/components/schemas/RentACarContractResponse' } } }
+        '422': { $ref: '#/components/responses/Validation' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /vehicles:
+    get:
+      summary: Listar vehículos
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Q' }
+        - { $ref: '#/components/parameters/ContractIdFilter' }
+      responses: { '200': { description: OK } }
+    post:
+      summary: Crear vehículo (asociado a un contrato existente)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Vehicle'
+              required: [alquiler_id]
+      responses:
+        '201': { description: Creado }
+        '422': { $ref: '#/components/responses/Validation' }
+  /vehicles/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+    get:    { summary: Obtener vehículo,    responses: { '200': { description: OK } } }
+    put:    { summary: Actualizar vehículo, responses: { '200': { description: OK } } }
+    delete: { summary: Eliminar vehículo,   responses: { '200': { description: OK } } }
+
+  /persons:
+    get:
+      summary: Listar personas
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Q' }
+        - { $ref: '#/components/parameters/ContractIdFilter' }
+      responses: { '200': { description: OK } }
+    post:
+      summary: Crear persona (asociada a un contrato existente)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Person'
+              required: [alquiler_id, rol]
+      responses:
+        '201': { description: Creado }
+        '422': { $ref: '#/components/responses/Validation' }
+  /persons/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+    get:    { summary: Obtener persona,    responses: { '200': { description: OK } } }
+    put:    { summary: Actualizar persona, responses: { '200': { description: OK } } }
+    delete: { summary: Eliminar persona,   responses: { '200': { description: OK } } }
+
+  /licenses:
+    post:
+      summary: Crear permiso de conducir (asociado a una persona)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/License'
+              required: [persona_id]
+      responses:
+        '201': { description: Creado }
+        '422': { $ref: '#/components/responses/Validation' }
+  /licenses/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+    get:    { summary: Obtener permiso,    responses: { '200': { description: OK } } }
+    put:    { summary: Actualizar permiso, responses: { '200': { description: OK } } }
+    delete: { summary: Eliminar permiso,   responses: { '200': { description: OK } } }
+
+  /addresses:
+    post:
+      summary: Crear dirección (recogida/devolucion → contrato; persona → persona)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Address'
+              required: [tipo]
+      responses:
+        '201': { description: Creado }
+        '422': { $ref: '#/components/responses/Validation' }
+  /addresses/{id}:
+    parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+    get:    { summary: Obtener dirección,    responses: { '200': { description: OK } } }
+    put:    { summary: Actualizar dirección, responses: { '200': { description: OK } } }
+    delete: { summary: Eliminar dirección,   responses: { '200': { description: OK } } }
