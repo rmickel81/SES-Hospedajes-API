@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>API de SES.Hospedajes — documentación para integradores</title>
+<meta name="description" content="Documentación pública de la API REST de seshospedajes.es: especificación OpenAPI, ejemplos en PHP, Node, Python y curl, y los errores del Ministerio del Interior que no están escritos en ninguna otra parte.">
+<link rel="icon" href="assets/imagotipo-negro.png">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="SES Hospedajes">
+<meta property="og:locale" content="es_ES">
+<meta property="og:title" content="API de SES.Hospedajes — documentación para integradores">
+<meta property="og:description" content="Especificación OpenAPI, ejemplos en cuatro lenguajes y los errores del Ministerio que no están documentados en ninguna parte.">
+<meta property="og:image" content="https://seshospedajes.es/wp-content/uploads/2025/02/ses-hospedajes-imagotipo-negro.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant:wght@500;600;700&family=Red+Hat+Text:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Paleta de marca de seshospedajes.es */
+  --indigo:#050021;
+  --ink:#141617;
+  --teal:#18435a;
+  --gold:#ca8d3b;
+  --gold-deep:#b77100;
+  --gold-ink:#8a5500;      /* dorado legible sobre claro (6.2:1) */
+  --paper:#ffffff;
+  --paper-2:#f9f9fb;
+  --paper-3:#f2f3f5;
+  --line:#e4e6ec;
+  --body:#3c4350;
+  --serif:"Cormorant",Georgia,"Times New Roman",serif;
+  --sans:"Red Hat Text",-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  --wrap:1120px;
+  --bg:var(--paper);
+  --fg:var(--ink);
+  --card:var(--paper);
+  --surface:var(--paper-2);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0b0a16; --fg:#eceaf2; --body:#b3b0c2;
+    --card:#13111f; --surface:#100e1a; --line:#241f38;
+    --paper-3:#1a1729; --gold-ink:#e0a959;
+  }
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--body);
+  font-family:var(--sans);font-size:17px;line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+img{max-width:100%;display:block}
+a{color:var(--gold-ink);text-decoration-thickness:1px;text-underline-offset:3px}
+a:hover{color:var(--gold-deep)}
+h1,h2,h3{font-family:var(--serif);color:var(--fg);font-weight:600;line-height:1.12;margin:0}
+h2{font-size:clamp(1.9rem,4vw,2.9rem);letter-spacing:-.01em}
+h3{font-size:1.3rem}
+.wrap{max-width:var(--wrap);margin:0 auto;padding-inline:24px}
+section{padding-block:clamp(56px,9vw,104px)}
+.eyebrow{
+  font-size:.72rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--gold-ink);margin:0 0 14px
+}
+
+/* ---------- Barra superior ---------- */
+.nav{
+  position:sticky;top:0;z-index:50;background:var(--indigo);
+  border-bottom:1px solid rgba(202,141,59,.22)
+}
+.nav .wrap{display:flex;align-items:center;gap:20px;height:62px}
+.brand{display:flex;align-items:center;gap:11px;margin-right:auto;text-decoration:none}
+.brand img{height:30px;width:auto}
+.brand b{font-family:var(--serif);font-size:1.17rem;color:#fff;font-weight:600;letter-spacing:.01em}
+.brand span{color:var(--gold);font-weight:600}
+.nav a.lnk{color:#cfcadd;text-decoration:none;font-size:.9rem;font-weight:500}
+.nav a.lnk:hover{color:var(--gold)}
+.nav .hide-s{display:none}
+@media(min-width:800px){.nav .hide-s{display:inline}}
+
+/* ---------- Portada ---------- */
+.hero{
+  background:
+    radial-gradient(900px 420px at 78% -8%,rgba(202,141,59,.20),transparent 62%),
+    radial-gradient(700px 380px at 8% 108%,rgba(24,67,90,.55),transparent 60%),
+    var(--indigo);
+  color:#fff;padding-block:clamp(68px,11vw,124px);overflow:hidden
+}
+.hero h1{
+  color:#fff;font-size:clamp(2.6rem,6.4vw,4.6rem);letter-spacing:-.018em;max-width:15ch
+}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero p.lead{
+  color:#c8c3d8;font-size:clamp(1.06rem,2vw,1.28rem);max-width:60ch;margin:22px 0 0
+}
+.hero .eyebrow{color:var(--gold)}
+.cta{display:flex;flex-wrap:wrap;gap:13px;margin-top:34px}
+.btn{
+  display:inline-flex;align-items:center;gap:9px;padding:13px 24px;border-radius:9px;
+  font-family:var(--sans);font-weight:600;font-size:.95rem;text-decoration:none;
+  border:1px solid transparent;transition:transform .16s ease,background .16s ease,border-color .16s ease
+}
+.btn:hover{transform:translateY(-2px)}
+.btn-p{background:var(--gold);color:#2a1a00}
+.btn-p:hover{background:#dda75a;color:#2a1a00}
+.btn-s{border-color:rgba(255,255,255,.30);color:#fff}
+.btn-s:hover{border-color:var(--gold);color:var(--gold)}
+
+/* ---------- Bloque de código ---------- */
+.term{
+  margin-top:44px;background:rgba(0,0,0,.34);border:1px solid rgba(202,141,59,.26);
+  border-radius:12px;overflow:hidden;max-width:660px
+}
+.term-bar{
+  display:flex;align-items:center;gap:7px;padding:10px 15px;
+  border-bottom:1px solid rgba(202,141,59,.18)
+}
+.dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.22)}
+.term-bar span{
+  margin-left:8px;font-family:var(--mono);font-size:.72rem;color:#8e88a6;letter-spacing:.04em
+}
+.term pre{
+  margin:0;padding:18px 20px;overflow-x:auto;font-family:var(--mono);
+  font-size:.83rem;line-height:1.75;color:#e4e0f0
+}
+.c-dim{color:#7d7796}.c-gold{color:var(--gold)}.c-key{color:#9fd2e8}.c-str{color:#c7e6a8}
+
+/* ---------- Tarjetas ---------- */
+.grid{display:grid;gap:20px;margin-top:44px}
+@media(min-width:760px){.grid-3{grid-template-columns:repeat(3,1fr)}}
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:13px;padding:28px;
+  display:flex;flex-direction:column;transition:border-color .18s ease,transform .18s ease
+}
+.card:hover{border-color:var(--gold);transform:translateY(-3px)}
+.card .tag{
+  font-family:var(--mono);font-size:.7rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--gold-ink);margin-bottom:11px
+}
+.card h3{margin-bottom:9px}
+.card p{margin:0 0 18px;font-size:.94rem}
+.card .go{margin-top:auto;font-weight:600;font-size:.9rem;text-decoration:none}
+.card .go::after{content:" →";transition:opacity .2s}
+
+/* ---------- Aviso ---------- */
+.warn{
+  background:var(--surface);border:1px solid var(--line);
+  border-left:4px solid var(--gold);border-radius:12px;padding:30px
+}
+.warn h3{margin-bottom:10px}
+.warn p{margin:0 0 14px}
+.warn p:last-child{margin-bottom:0}
+.warn code,.rt code,.prose code{
+  font-family:var(--mono);font-size:.85em;background:var(--paper-3);
+  padding:.14em .42em;border-radius:5px;color:var(--fg)
+}
+
+/* ---------- Rutas ---------- */
+.rt{
+  width:100%;border-collapse:collapse;margin-top:36px;font-size:.93rem;
+  border:1px solid var(--line);border-radius:12px;overflow:hidden
+}
+.rt th{
+  text-align:left;font-size:.72rem;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--gold-ink);padding:14px 18px;background:var(--surface);
+  border-bottom:1px solid var(--line)
+}
+.rt td{padding:13px 18px;border-bottom:1px solid var(--line);vertical-align:top}
+.rt tr:last-child td{border-bottom:0}
+.rt td:first-child{color:var(--fg);font-weight:600;white-space:nowrap}
+.scroll-x{overflow-x:auto}
+
+/* ---------- Lenguajes ---------- */
+.langs{display:flex;flex-wrap:wrap;gap:11px;margin-top:32px}
+.lang{
+  display:inline-flex;align-items:center;gap:9px;padding:11px 19px;border-radius:9px;
+  border:1px solid var(--line);background:var(--card);font-family:var(--mono);
+  font-size:.85rem;color:var(--fg);text-decoration:none
+}
+.lang:hover{border-color:var(--gold);color:var(--gold-ink)}
+
+/* ---------- Autor ---------- */
+.author{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.author-in{display:grid;gap:34px;align-items:start}
+@media(min-width:860px){.author-in{grid-template-columns:180px 1fr}}
+.avatar{
+  width:132px;height:132px;border-radius:16px;background:var(--indigo);
+  display:grid;place-items:center;border:1px solid rgba(202,141,59,.3)
+}
+.avatar img{width:62px;height:auto}
+.author h2{margin-bottom:6px}
+.role{
+  font-family:var(--mono);font-size:.8rem;letter-spacing:.05em;color:var(--gold-ink);
+  margin:0 0 20px;text-transform:uppercase
+}
+.prose p{margin:0 0 16px;max-width:66ch}
+.prose p:last-child{margin-bottom:0}
+.prose strong{color:var(--fg)}
+
+/* ---------- Pie ---------- */
+footer{background:var(--indigo);color:#a9a3c0;padding-block:52px;font-size:.9rem}
+footer .cols{display:grid;gap:30px}
+@media(min-width:720px){footer .cols{grid-template-columns:2fr 1fr 1fr}}
+footer h4{
+  font-family:var(--sans);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--gold);margin:0 0 13px;font-weight:700
+}
+footer a{color:#cfcadd;text-decoration:none;display:block;margin-bottom:9px}
+footer a:hover{color:var(--gold)}
+footer .fine{
+  margin-top:36px;padding-top:22px;border-top:1px solid rgba(255,255,255,.11);
+  font-size:.82rem;color:#817ba0
+}
+footer .fine a{display:inline;color:#a9a3c0}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top">
+      <img src="assets/imagotipo-blanco.png" alt="">
+      <b>SES<span>.</span>Hospedajes <span>API</span></b>
+    </a>
+    <a class="lnk hide-s" href="#empezar">Empezar</a>
+    <a class="lnk hide-s" href="#ministerio">Ministerio</a>
+    <a class="lnk hide-s" href="#rutas">Rutas</a>
+    <a class="lnk" href="https://github.com/rmickel81/SES-Hospedajes-API">GitHub</a>
+  </div>
+</nav>
+
+<header class="hero" id="top">
+  <div class="wrap">
+    <p class="eyebrow">Documentación pública · API v1.2.0</p>
+    <h1>Integra el parte de viajero <em>sin pelearte con el Ministerio</em></h1>
+    <p class="lead">
+      La API REST de seshospedajes.es para PMS, ERPs y sistemas de rent-a-car.
+      Especificación OpenAPI, ejemplos en cuatro lenguajes y —lo que de verdad
+      importa— las reglas del Ministerio del Interior que no están escritas en
+      ninguna otra parte de internet.
+    </p>
+    <div class="cta">
+      <a class="btn btn-p" href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/docs/arranque-rapido.md">Arranque rápido</a>
+      <a class="btn btn-s" href="https://github.com/rmickel81/SES-Hospedajes-API">Ver el repositorio</a>
+    </div>
+
+    <div class="term">
+      <div class="term-bar">
+        <i class="dot"></i><i class="dot"></i><i class="dot"></i>
+        <span>primera llamada</span>
+      </div>
+<pre><span class="c-dim">$</span> curl -sS https://seshospedajes.es/app/api/v1/<span class="c-gold">ping</span> \
+    -H <span class="c-str">"X-Api-Key: $SES_API_KEY"</span>
+
+{ <span class="c-key">"ok"</span>: true, <span class="c-key">"userId"</span>: 123, <span class="c-key">"env"</span>: <span class="c-str">"sandbox"</span> }</pre>
+    </div>
+  </div>
+</header>
+
+<section id="empezar">
+  <div class="wrap">
+    <p class="eyebrow">Por dónde se empieza</p>
+    <h2>Tres documentos y ya estás integrando</h2>
+    <div class="grid grid-3">
+
+      <article class="card">
+        <p class="tag">20 minutos</p>
+        <h3>Arranque rápido</h3>
+        <p>
+          De conseguir la clave al primer huésped comunicado: autenticación,
+          establecimientos, el alta, la idempotencia y cómo confirmar que el
+          registro llegó de verdad al Ministerio.
+        </p>
+        <a class="go" href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/docs/arranque-rapido.md">Leer la guía</a>
+      </article>
+
+      <article class="card">
+        <p class="tag">Lo diferencial</p>
+        <h3>Errores del Ministerio</h3>
+        <p>
+          Siete reglas que el servicio SES.Hospedajes aplica y no documenta.
+          Cada una nos ha costado un incidente. Están aquí para que a ti no te
+          cuesten nada.
+        </p>
+        <a class="go" href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/docs/errores-ministerio.md">Ver las siete</a>
+      </article>
+
+      <article class="card">
+        <p class="tag">Léelo antes</p>
+        <h3>Entorno de pruebas</h3>
+        <p>
+          El sandbox no es un entorno aparte: comparte cuenta y base de datos
+          con producción. Saberlo cambia por completo cómo montas las pruebas.
+        </p>
+        <a class="go" href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/docs/sandbox.md">Entender el sandbox</a>
+      </article>
+
+    </div>
+  </div>
+</section>
+
+<section id="ministerio" style="background:var(--surface);border-block:1px solid var(--line)">
+  <div class="wrap">
+    <p class="eyebrow">Lo que nadie más te cuenta</p>
+    <h2>Un <code>201</code> no significa que esté comunicado</h2>
+    <p style="max-width:66ch;margin:20px 0 0">
+      El servicio del Ministerio es asíncrono y tiene trampas que no aparecen en
+      su esquema. Estas son tres de las siete que documentamos:
+    </p>
+
+    <div class="grid grid-3">
+      <article class="card">
+        <p class="tag">Regla 1</p>
+        <h3>Cinco caracteres</h3>
+        <p>
+          <code>tipoDocumento</code> no admite <code>"PASAPORTE"</code>: tiene nueve
+          caracteres y el campo acepta cinco. Los válidos son <code>NIF</code>,
+          <code>NIE</code>, <code>PAS</code>, <code>CIF</code> y <code>OTRO</code>.
+          El rechazo llega en inglés y sin decir de qué persona se queja.
+        </p>
+      </article>
+      <article class="card">
+        <p class="tag">Regla 4</p>
+        <h3>El código 6 miente</h3>
+        <p>
+          <code>codigo 0</code> solo dice que tu petición está bien formada. El
+          veredicto va en <code>codigoEstado</code>, y únicamente el <code>1</code>
+          es un sí. El <code>6</code> dice «tramitado» y es un rechazo parcial.
+        </p>
+      </article>
+      <article class="card">
+        <p class="tag">Regla 7</p>
+        <h3>Falta una letra</h3>
+        <p>
+          El esquema declara <code>resultadoComunicacion</code>. El servicio
+          devuelve <code>resutadoComunicacion</code>, sin la «l». Quien solo acepte
+          la del esquema leerá cero errores en cada respuesta que trae errores.
+        </p>
+      </article>
+    </div>
+
+    <div class="warn" style="margin-top:26px">
+      <h3>Y una advertencia que preferimos dar de frente</h3>
+      <p>
+        Los registros creados con una clave de sandbox se marcan con
+        <code>enviado_ministerio = 2</code> y no se envían nunca. Pero conviven con
+        los datos reales en la misma cuenta y la misma base de datos: la separación
+        es un valor en un campo, no un muro.
+      </p>
+      <p>
+        Por eso los ejemplos de este repositorio comprueban el entorno antes de
+        escribir y <strong>se niegan a operar contra producción</strong> salvo que se
+        lo pidas expresamente.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section id="rutas">
+  <div class="wrap">
+    <p class="eyebrow">Superficie completa</p>
+    <h2>Diecisiete rutas, ni una más</h2>
+    <p style="max-width:66ch;margin:20px 0 0">
+      Base: <code>https://seshospedajes.es/app/api/v1</code> · Autenticación por
+      cabecera <code>X-Api-Key</code>. La especificación
+      <a href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/openapi.yaml">OpenAPI 3.0.3</a>
+      es la única fuente de verdad.
+    </p>
+
+    <div class="scroll-x">
+    <table class="rt">
+      <thead><tr><th>Recurso</th><th>Rutas</th></tr></thead>
+      <tbody>
+        <tr><td>Health</td><td><code>GET /ping</code></td></tr>
+        <tr><td>Establecimientos</td><td><code>/establishments</code> · <code>/establishments/{id}</code></td></tr>
+        <tr><td>Huéspedes</td><td><code>/guests</code> · <code>/guests/{id}</code></td></tr>
+        <tr><td>Precheckins</td><td><code>GET /precheckins</code></td></tr>
+        <tr><td>Contratos</td><td><code>/contracts</code> · <code>/contracts/{id}</code></td></tr>
+        <tr><td>Rent-a-Car</td><td><code>POST /rentacar/contracts</code> — alta atómica: contrato, vehículo, personas, permisos y direcciones en una sola transacción</td></tr>
+        <tr><td>Vehículos</td><td><code>/vehicles</code> · <code>/vehicles/{id}</code></td></tr>
+        <tr><td>Personas</td><td><code>/persons</code> · <code>/persons/{id}</code></td></tr>
+        <tr><td>Permisos</td><td><code>/licenses</code> · <code>/licenses/{id}</code></td></tr>
+        <tr><td>Direcciones</td><td><code>/addresses</code> · <code>/addresses/{id}</code></td></tr>
+      </tbody>
+    </table>
+    </div>
+
+    <p class="eyebrow" style="margin-top:52px">Copia y pega</p>
+    <h2 style="font-size:clamp(1.5rem,3vw,2rem)">Ejemplos que no necesitan instalar nada</h2>
+    <p style="max-width:66ch;margin:16px 0 0">
+      Alta de huésped y alta de contrato rent-a-car, sin dependencias externas y
+      sin una sola credencial dentro. Las personas son inventadas y sus documentos
+      llevan la letra de control deliberadamente incorrecta.
+    </p>
+    <div class="langs">
+      <a class="lang" href="https://github.com/rmickel81/SES-Hospedajes-API/tree/main/ejemplos/php">PHP</a>
+      <a class="lang" href="https://github.com/rmickel81/SES-Hospedajes-API/tree/main/ejemplos/node">Node</a>
+      <a class="lang" href="https://github.com/rmickel81/SES-Hospedajes-API/tree/main/ejemplos/python">Python</a>
+      <a class="lang" href="https://github.com/rmickel81/SES-Hospedajes-API/tree/main/ejemplos/curl">curl</a>
+      <a class="lang" href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/postman/seshospedajes.postman_collection.json">Postman</a>
+    </div>
+  </div>
+</section>
+
+<section class="author" id="autor">
+  <div class="wrap author-in">
+    <div class="avatar"><img src="assets/imagotipo-blanco.png" alt=""></div>
+    <div>
+      <p class="eyebrow">Quién mantiene esto</p>
+      <h2>rmickel81</h2>
+      <p class="role">Diseñador técnico y desarrollador jefe · seshospedajes.es</p>
+      <div class="prose">
+        <p>
+          Diseño y desarrollo la plataforma de seshospedajes.es: el panel, la
+          integración con el Ministerio del Interior y esta API. Lo que hay en este
+          repositorio no sale de un manual, sale de comunicar partes de viajero en
+          producción y de equivocarme haciéndolo.
+        </p>
+        <p>
+          <strong>Este repositorio es público a propósito.</strong> La documentación
+          de la API ya existía en nuestra web, pero nadie busca documentación en la
+          web de un proveedor: se busca en GitHub. Y la parte que de verdad hacía
+          falta —los errores del Ministerio, los límites de campo, el
+          <code>codigoEstado</code> que dice «tramitado» cuando ha fallado— no estaba
+          escrita en ningún sitio de internet, ni siquiera en el nuestro.
+        </p>
+        <p>
+          Está aquí para cualquier desarrollador que tenga que comunicar viajeros
+          al Ministerio, seas cliente nuestro o no. Si te ahorra la tarde que a mí
+          me costó, ha valido la pena. Si te encuentras un error que no está
+          documentado, escríbeme y lo añadimos: la página de errores es mejor cuanto
+          más larga.
+        </p>
+        <p>
+          <a href="mailto:dev@rmickel.com">dev@rmickel.com</a> ·
+          <a href="https://github.com/rmickel81">github.com/rmickel81</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div>
+        <a class="brand" href="#top" style="margin-bottom:14px">
+          <img src="assets/imagotipo-blanco.png" alt="">
+          <b>SES<span>.</span>Hospedajes <span>API</span></b>
+        </a>
+        <p style="margin:0;max-width:42ch">
+          Software de gestión de partes de viajero y contratos de alquiler para
+          alojamientos y rent-a-car en España.
+        </p>
+      </div>
+      <div>
+        <h4>Documentación</h4>
+        <a href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/docs/arranque-rapido.md">Arranque rápido</a>
+        <a href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/docs/errores-ministerio.md">Errores del Ministerio</a>
+        <a href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/docs/sandbox.md">Entorno de pruebas</a>
+        <a href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/openapi.yaml">Especificación OpenAPI</a>
+      </div>
+      <div>
+        <h4>Enlaces</h4>
+        <a href="https://github.com/rmickel81/SES-Hospedajes-API">Repositorio</a>
+        <a href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/CONTRIBUTING.md">Cómo contribuir</a>
+        <a href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/CHANGELOG.md">Changelog</a>
+        <a href="https://seshospedajes.es">seshospedajes.es</a>
+      </div>
+    </div>
+    <p class="fine">
+      Documentación bajo
+      <a href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/LICENSE">CC BY 4.0</a>;
+      ejemplos bajo
+      <a href="https://github.com/rmickel81/SES-Hospedajes-API/blob/main/ejemplos/LICENSE">MIT</a>.
+      Los issues están cerrados a propósito: para dudas de integración escribe a
+      <a href="mailto:dev@rmickel.com">dev@rmickel.com</a>.
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>

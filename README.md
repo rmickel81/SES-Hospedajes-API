@@ -5,6 +5,10 @@ para integradores: PMS hoteleros, ERPs y sistemas propios de rent-a-car que
 necesiten registrar huéspedes y contratos de alquiler y comunicarlos al
 Ministerio del Interior (SES.Hospedajes / VUD).
 
+📖 **[Sitio de documentación](https://rmickel81.github.io/SES-Hospedajes-API/)**
+· [Arranque rápido](docs/arranque-rapido.md)
+· [Errores del Ministerio](docs/errores-ministerio.md)
+
 > **Este repositorio documenta la API. No la implementa.**
 > No contiene código de la plataforma, ni el esquema de la base de datos, ni los
 > XSD del Ministerio. Solo la especificación, la documentación y ejemplos de
@@ -131,13 +135,7 @@ peor que no tener issues.
 
 Para dudas de integración, errores en esta documentación o una clave de sandbox:
 
-**[CORREO-DE-CONTACTO]**
-
-<!--
-  PENDIENTE ANTES DE ANUNCIAR (§6 paso 9): sustituir [CORREO-DE-CONTACTO] por un
-  buzón real y atendido. Sin esto el repositorio no debe anunciarse: el §5 del
-  plan pide un correo visible precisamente porque los issues están cerrados.
--->
+**[dev@rmickel.com](mailto:dev@rmickel.com)**
 
 Si encuentras un fallo de seguridad, escribe a esa dirección en privado. No
 abras un canal público para eso.
